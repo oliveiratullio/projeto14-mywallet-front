@@ -23,9 +23,9 @@ function handleSubmit(e){
     const promise = axios.post("https://my-wallet-mp2f.onrender.com/sign-in", dataForm)
     promise.then((res) => {
     console.log(res.data)
-    const {_id, name, email, token} = res.data
-    setAuth({_id, name, email, token})
-    localStorage.setItem("auth" , JSON.stringify({_id, name, email, token}))
+    const { name, token} = res.data
+    localStorage.setItem("auth" , JSON.stringify({name, token}))
+    setAuth({ name, token})
     setIsLoading(false);
     console.log(auth)
     navigate("/home")

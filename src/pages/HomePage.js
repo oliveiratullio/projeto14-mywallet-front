@@ -1,50 +1,97 @@
 import styled from "styled-components"
 import { BiExit } from "react-icons/bi"
 import { AiOutlineMinusCircle, AiOutlinePlusCircle } from "react-icons/ai"
+import { useContext, useEffect, useState } from "react"
+import AuthContext from "../contexts/AuthContext"
+import { Link, useNavigate } from "react-router-dom"
+import axios from "axios"
 
 export default function HomePage() {
+  const {auth, setAuth} = useContext(AuthContext)
+  const [transactionList, setTransactionList] = useState([])
+  const [balance, setBalance] = useState(0)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if(!auth.token) {
+      return navigate("/")
+    }
+    const promise = axios.get('https://my-wallet-mp2f.onrender.com//transactions', {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+    promise.then((res) => {
+      const arr = res.data
+      setTransactionList(arr.reverse())
+      let sum = 0;
+      transactionList.forEach(transaction => {
+      if (transaction.type === 'income') {
+        sum += transaction.value;
+      } else {
+        sum -= transaction.value;
+      }
+    });
+    setBalance(sum.toFixed(2));
+      
+    })
+    promise.catch((err) => {
+      console.log(err.response.data)
+    })
+  }, [])
+  function logout() {
+    axios.delete('https://my-wallet-mp2f.onrender.com/logout', {token: auth.token})
+    .then((res) => {
+      localStorage.removeItem('auth')
+      alert("Você foi deslogado")
+      navigate('/')
+    })
+    .catch((err) => console.log(err.response.data))
+    
+  }
+
   return (
     <HomeContainer>
       <Header>
-        <h1>Olá, Fulano</h1>
-        <BiExit />
+        <h1>Olá, {auth.name}</h1>
+        <BiExit onClick={logout}/>
       </Header>
 
       <TransactionsContainer>
         <ul>
-          <ListItemContainer>
-            <div>
-              <span>30/11</span>
-              <strong>Almoço mãe</strong>
-            </div>
-            <Value color={"negativo"}>120,00</Value>
-          </ListItemContainer>
-
-          <ListItemContainer>
-            <div>
-              <span>15/11</span>
-              <strong>Salário</strong>
-            </div>
-            <Value color={"positivo"}>3000,00</Value>
-          </ListItemContainer>
+        {transactionList.map((t, index) => {
+              return (
+                <ListItemContainer>
+                  <div>
+                    <span>{t.date}</span>
+                    <strong>{t.description}</strong>
+                  </div>
+                  <Value color={t.type === "entrada" ? "positivo" : "negativo"}>{t.value.toFixed(2).replace('.',',')}</Value>
+                </ListItemContainer>
+                    )
+            })}
         </ul>
 
         <article>
           <strong>Saldo</strong>
-          <Value color={"positivo"}>2880,00</Value>
+          <Value color={balance > 0 ? "positivo" : "negativo"}>{balance ? balance :0}</Value>
         </article>
       </TransactionsContainer>
 
 
       <ButtonsContainer>
-        <button>
-          <AiOutlinePlusCircle />
-          <p>Nova <br /> entrada</p>
-        </button>
+        <Link to="/nova-transacao/entrada">
+          <button>
+            <AiOutlinePlusCircle />
+            <p>Nova <br /> entrada</p>
+          </button>
+        </Link>
+        <Link to="/nova-transacao/saida">
         <button>
           <AiOutlineMinusCircle />
           <p>Nova <br />saída</p>
         </button>
+        </Link>
       </ButtonsContainer>
 
     </HomeContainer>
