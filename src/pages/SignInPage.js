@@ -1,18 +1,52 @@
 import styled from "styled-components"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import MyWalletLogo from "../components/MyWalletLogo"
+import { useContext, useState } from "react";
+import AuthContext from "../contexts/AuthContext";
+import axios from "axios";
 
 export default function SignInPage() {
+  const [dataForm, setDataForm] = useState({email: '', password: ''})
+  const [isLoading, setIsLoading] = useState(false)
+  const {auth, setAuth} = useContext(AuthContext)
+  const navigate = useNavigate()
+  function handleChange(e) {
+    setDataForm({ ...dataForm, [e.target.name]: e.target.value });
+  }
+  
+
+
+function handleSubmit(e){
+    e.preventDefault();
+    console.log(dataForm)
+    setIsLoading(true);
+    const promise = axios.post("https://my-wallet-mp2f.onrender.com/sign-in", dataForm)
+    promise.then((res) => {
+    console.log(res.data)
+    const {_id, name, email, token} = res.data
+    setAuth({_id, name, email, token})
+    localStorage.setItem("auth" , JSON.stringify({_id, name, email, token}))
+    setIsLoading(false);
+    console.log(auth)
+    navigate("/home")
+    })
+    
+    promise.catch((err) => {
+    setIsLoading(false);
+      console.log(err)
+    alert('Erro, tente novamente');
+    });
+}
   return (
     <SingInContainer>
-      <form>
+      <form onSubmit={handleSubmit}>
         <MyWalletLogo />
-        <input placeholder="E-mail" type="email" />
-        <input placeholder="Senha" type="password" autocomplete="new-password" />
+        <input placeholder="E-mail" type="email" name="email" onChange={handleChange} value={dataForm.email} disabled={isLoading} required/>
+        <input placeholder="Senha" type="password" name="password" onChange={handleChange} value={dataForm.password} disabled={isLoading} required/>
         <button>Entrar</button>
       </form>
 
-      <Link>
+      <Link to="/cadastro">
         Primeira vez? Cadastre-se!
       </Link>
     </SingInContainer>
